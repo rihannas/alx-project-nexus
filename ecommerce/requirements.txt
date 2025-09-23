@@ -7,3 +7,5 @@ redis
 django-redis
 celery
 gunicorn
+drf-nested-routers
+pillow
