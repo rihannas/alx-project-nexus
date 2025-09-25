@@ -79,44 +79,13 @@ class Product(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
     description = models.TextField()
-    
-    # Relationships
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name='products')
-    
-    # Pricing
-    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
-    compare_at_price = models.DecimalField(
-    max_digits=10, decimal_places=2,
-    validators=[MinValueValidator(Decimal('0.01'))],
-    blank=True, null=True
-)
 
-    # Inventory
-    track_inventory = models.BooleanField(default=True)
-    inventory_quantity = models.IntegerField(default=0, validators=[MinValueValidator(0)])
-    low_stock_threshold = models.IntegerField(default=5, validators=[MinValueValidator(0)])
-    
-    # Physical attributes
-    SIZE_CHOICES = [
-        ('XS', 'Extra Small'),
-        ('S', 'Small'),
-        ('M', 'Medium'),
-        ('L', 'Large'),
-        ('XL', 'Extra Large'),
-        ('XXL', 'Extra Extra Large'),
-    ]
-    
-    
-    size = models.CharField(max_length=3, choices=SIZE_CHOICES, blank=True, null=True)
-    
-    # Status and visibility
+    # Pricing is now on ProductVariant
     status = models.CharField(max_length=20, choices=PRODUCT_STATUS_CHOICES, default='draft')
-    
-    # SEO fields
     meta_title = models.CharField(max_length=60, blank=True, null=True)
     meta_description = models.CharField(max_length=160, blank=True, null=True)
-    
-    # Timestamps
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -126,8 +95,6 @@ class Product(models.Model):
             models.Index(fields=['slug']),
             models.Index(fields=['status']),
             models.Index(fields=['category']),
-            models.Index(fields=['price']),
-            models.Index(fields=['size']),
             models.Index(fields=['created_at']),
         ]
 
@@ -139,40 +106,64 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self):
-        return reverse('product-detail', kwargs={'slug': self.slug})
-
-    @property
-    def is_on_sale(self):
-        """Check if product is on sale"""
-        return self.compare_at_price and self.price < self.compare_at_price
-
-    @property
-    def discount_percentage(self):
-        """Calculate discount percentage"""
-        if self.is_on_sale:
-            return round(((self.compare_at_price - self.price) / self.compare_at_price) * 100, 2)
-        return 0
-
     @property
     def is_in_stock(self):
-        """Check if product is in stock"""
-        if not self.track_inventory:
-            return True
-        return self.inventory_quantity > 0
-
-    @property
-    def is_low_stock(self):
-        """Check if product is low in stock"""
-        if not self.track_inventory:
-            return False
-        return self.inventory_quantity <= self.low_stock_threshold
+        """Check if any variant is in stock"""
+        return self.variants.filter(inventory_quantity__gt=0).exists()
 
     @property
     def main_image(self):
         """Get the main product image"""
         return self.images.filter(is_main=True).first()
 
+
+class ProductVariant(models.Model):
+    """Variants of a product (size, price, inventory)"""
+    SIZE_CHOICES = [
+        ('XS', 'Extra Small'),
+        ('S', 'Small'),
+        ('M', 'Medium'),
+        ('L', 'Large'),
+        ('XL', 'Extra Large'),
+        ('XXL', 'Extra Extra Large'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
+    size = models.CharField(max_length=3, choices=SIZE_CHOICES)
+    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal('0.01'))])
+    compare_at_price = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        blank=True, null=True
+    )
+    inventory_quantity = models.IntegerField(default=0, validators=[MinValueValidator(0)])
+    low_stock_threshold = models.IntegerField(default=5, validators=[MinValueValidator(0)])
+
+    class Meta:
+        unique_together = ("product", "size")
+        ordering = ["size"]
+
+    def __str__(self):
+        return f"{self.product.name} - {self.size}"
+
+    @property
+    def is_on_sale(self):
+        return self.compare_at_price and self.price < self.compare_at_price
+
+    @property
+    def discount_percentage(self):
+        if self.is_on_sale:
+            return round(((self.compare_at_price - self.price) / self.compare_at_price) * 100, 2)
+        return 0
+
+    @property
+    def is_in_stock(self):
+        return self.inventory_quantity > 0
+
+    @property
+    def is_low_stock(self):
+        return self.inventory_quantity <= self.low_stock_threshold
 
 class ProductImage(models.Model):
     """Product images model"""
