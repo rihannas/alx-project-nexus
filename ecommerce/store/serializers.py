@@ -149,11 +149,11 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 # ORDER + ITEMS + PAYMENT
 # -------------------
 class OrderItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    variant = ProductVariantSerializer(read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ["id", "product", "quantity", "price", "total_price"]
+        fields = ["id", "variant", "quantity", "price", "total_price"]
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -192,11 +192,12 @@ class WishlistSerializer(serializers.ModelSerializer):
 # CART + CART ITEMS
 # -------------------
 class CartItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    variant = ProductVariantSerializer(read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ["id", "product", "quantity", "total_price"]
+        fields = ["id", "variant", "quantity", "total_price"]
+
 
 
 class CartSerializer(serializers.ModelSerializer):
