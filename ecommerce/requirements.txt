@@ -9,3 +9,7 @@ celery
 gunicorn
 drf-nested-routers
 pillow
+dj-rest-auth
+django-allauth
+requests
+django-filter
