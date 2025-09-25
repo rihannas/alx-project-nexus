@@ -246,15 +246,14 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    """Items in an order"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # Price at time of order
-    
+    price = models.DecimalField(max_digits=10, decimal_places=2)  # price snapshot
+
     def __str__(self):
-        return f"{self.quantity}x {self.product.name}"
+        return f"{self.quantity}x {self.variant.product.name} ({self.variant.size})"
 
     @property
     def total_price(self):
@@ -322,19 +321,19 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    """Items in shopping cart"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['cart', 'product']
+        unique_together = ['cart', 'variant']
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.name}"
+        return f"{self.quantity}x {self.variant.product.name} ({self.variant.size})"
 
     @property
     def total_price(self):
-        return self.quantity * self.product.price
+        return self.quantity * self.variant.price
+
