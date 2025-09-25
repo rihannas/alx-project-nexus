@@ -1,5 +1,5 @@
 from django.db import models
-from django.db import models
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
@@ -35,7 +35,13 @@ class CustomUser(AbstractUser):
     )
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['username']  # Remove first_name, last_name from required
+
+    def save(self, *args, **kwargs):
+        # Ensure password is hashed
+        if self.password and not self.password.startswith(('pbkdf2_', 'bcrypt', 'argon2')):
+            self.password = make_password(self.password)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.email
@@ -54,6 +60,10 @@ class Category(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+
+    def __str__(self):
+        return self.name
 
 
 class Product(models.Model):
