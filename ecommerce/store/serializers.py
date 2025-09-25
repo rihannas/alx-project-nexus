@@ -56,14 +56,21 @@ class CategorySerializer(serializers.ModelSerializer):
 # -------------------
 # PRODUCT + IMAGES + REVIEWS
 # -------------------
+
+class ReviewUserSerializer(serializers.Serializer):
+    """Only expose the username of the review user"""
+    username = serializers.CharField(read_only=True)
+
+
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ["id", "image", "alt_text", "is_main", "sort_order"]
 
 
+
 class ProductReviewSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = ReviewUserSerializer(read_only=True)
 
     class Meta:
         model = ProductReview
@@ -73,7 +80,6 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
-    reviews = ProductReviewSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -82,31 +88,53 @@ class ProductSerializer(serializers.ModelSerializer):
             "price", "compare_at_price", "track_inventory", "inventory_quantity",
             "low_stock_threshold", "size", "status",
             "meta_title", "meta_description",
-            "created_at", "updated_at",
             "is_on_sale", "discount_percentage",
             "is_in_stock", "is_low_stock",
-            "images", "reviews"
+            "images"
+        ]
+        
+
+# store/serializers.py
+class ProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "size", "price", "compare_at_price",
+            "inventory_quantity", "low_stock_threshold",
+            "is_on_sale", "discount_percentage",
+            "is_in_stock", "is_low_stock"
+        ]
+        read_only_fields = ["is_on_sale", "discount_percentage", "is_in_stock", "is_low_stock"]
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    images = ProductImageSerializer(many=True, read_only=True)
+    variants = ProductVariantSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            "id", "name", "slug", "description", "category",
+            "status", "meta_title", "meta_description",
+            "is_in_stock", "images", "variants"
         ]
 
+
 class ProductDetailSerializer(serializers.ModelSerializer):
-    """Serializer for product detail view (with reviews)"""
     images = ProductImageSerializer(many=True, read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
+    variants = ProductVariantSerializer(many=True, read_only=True)
     review_count = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     reviews = ProductReviewSerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'category', 'category_name',
-            'price', 'stock_quantity', 'size', 'status', 'is_featured',
-            'is_in_stock', 'images', 'review_count', 'average_rating',
-            'reviews', 'created_at', 'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'slug', 'is_in_stock', 'review_count', 
-            'average_rating', 'created_at', 'updated_at'
+            'status', 'is_in_stock', 'images',
+            'variants', 'review_count', 'average_rating', 'reviews'
         ]
 
     def get_review_count(self, obj):
