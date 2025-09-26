@@ -24,17 +24,14 @@ from rest_framework_simplejwt.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
-    # Browsable API login/logout (optional)
-    path('api-auth/', include('rest_framework.urls')),
-
-    # Your store app
-    path('store/', include('store.urls')),
-
-    # dj-rest-auth (login, logout, password reset, etc.)
+    
+    # Store app
+    path('api/store/', include('store.urls')),
+    
+    # Authentication endpoints
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
-
+    
     # JWT endpoints
     path('api/auth/jwt/create/', TokenObtainPairView.as_view(), name='jwt-create'),
     path('api/auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
