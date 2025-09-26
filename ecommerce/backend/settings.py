@@ -37,17 +37,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'store',
+    
+    # Third party apps
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
+    'corsheaders',
     'dj_rest_auth',
-    'dj_rest_auth.registration',
+    'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'dj_rest_auth.registration',
+    
+    # Local apps
+    'store',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -148,12 +156,16 @@ REST_FRAMEWORK = {
     )
 }
 
-ACCOUNT_LOGIN_METHODS = ['email']
-ACCOUNT_SIGNUP_FIELDS = {
-    'username': {'required': False},
-    'email': {'required': True},
-    'first_name': {'required': False},
-    'last_name': {'required': False},
+REST_AUTH_REGISTER_SERIALIZERS = {
+    'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
 }
-ACCOUNT_EMAIL_VERIFICATION = 'optional'  # Change to 'mandatory' for production
-ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+
+
+# Use email-only login
+ACCOUNT_LOGIN_METHODS = ['email']
+
+# Signup fields
+ACCOUNT_SIGNUP_FIELDS = ["email*"]  
+
+# Optional email verification
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
