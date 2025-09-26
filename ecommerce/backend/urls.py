@@ -16,13 +16,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Browsable API login/logout (optional)
     path('api-auth/', include('rest_framework.urls')),
-    path('store', include('store.urls')),
+
+    # Your store app
+    path('store/', include('store.urls')),
+
+    # dj-rest-auth (login, logout, password reset, etc.)
     path('api/auth/', include('dj_rest_auth.urls')),
     path('api/auth/registration/', include('dj_rest_auth.registration.urls')),
 
-
+    # JWT endpoints
+    path('api/auth/jwt/create/', TokenObtainPairView.as_view(), name='jwt-create'),
+    path('api/auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
+    path('api/auth/jwt/verify/', TokenVerifyView.as_view(), name='jwt-verify'),
 ]
