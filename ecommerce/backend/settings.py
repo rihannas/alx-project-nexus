@@ -78,24 +78,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASES = {
+    'default': dj_database_url.parse(
+        os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
+        conn_max_age=600
+    )
+}
 
-if DATABASE_URL:
-    # Railway
-    DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
-else:
-    # Database
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'ecommerce_db'),
-            'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'postgres_password'),
-            'HOST': os.environ.get('POSTGRES_HOST', 'db'),
-            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
-        }
-    }
-
+    
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
