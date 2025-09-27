@@ -11,12 +11,12 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-d$%4h8)&jf4s4c7oub7s7i1)r__*@-=a@5g&)18pn7emg86y-1')
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = os.environ.get('DEBUG').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(',')
 
 # Application definition
 INSTALLED_APPS = [
@@ -77,15 +77,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+# Database Configuration - FIXED VERSION
+import os
+import dj_database_url
 
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
-        conn_max_age=600
-    )
-}
+# Clear any existing database config
+DATABASES = {}
 
-    
+DATABASES["default"] = dj_database_url.parse(os.environ.get("DATABASE_URL"))
+ 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -119,9 +119,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 #Media files - Use Cloudinary for free media storage
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', ''),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', ''),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '')
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET')
 }
 
 # Default primary key field type
