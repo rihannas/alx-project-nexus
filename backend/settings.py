@@ -11,7 +11,7 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY')
+SECRET_KEY = (os.environ.get('SECRET_KEY') or 'django-insecure-d$%4h8)&jf4s4c7oub7s7i1)r__*@-=a@5g&)18pn7emg86y-1')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG')
