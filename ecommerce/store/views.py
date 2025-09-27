@@ -150,8 +150,70 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Order.objects.all()
         return Order.objects.filter(user=user)
 
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def create(self, request, *args, **kwargs):
+        """Create order from cart items"""
+        # Check if user wants to create from cart
+        from_cart = request.data.get('from_cart', False)
+        
+        if from_cart:
+            return self.create_order_from_cart(request)
+        else:
+            # Use the normal order creation with explicit items
+            return super().create(request, *args, **kwargs)
+    
+    def create_order_from_cart(self, request):
+        """Create an order from the user's cart items"""
+        try:
+            cart = Cart.objects.get(user=request.user)
+            cart_items = cart.items.all()
+            
+            if not cart_items.exists():
+                return Response(
+                    {'error': 'Cart is empty'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Prepare order data
+            order_data = {
+                'shipping_address': request.data.get('shipping_address'),
+                'phone': request.data.get('phone'),
+                'items': []
+            }
+            
+            # Convert cart items to order items
+            for cart_item in cart_items:
+                if cart_item.quantity is None or cart_item.quantity <= 0:
+                    continue
+                    
+                if cart_item.variant.price is None:
+                    return Response(
+                        {'error': f'Price not set for {cart_item.variant.product.name}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                order_data['items'].append({
+                    'variant_id': str(cart_item.variant.id),
+                    'quantity': cart_item.quantity
+                })
+            
+            # Validate and create order
+            serializer = self.get_serializer(data=order_data)
+            serializer.is_valid(raise_exception=True)
+            order = serializer.save(user=request.user)
+            
+            # Clear the cart after successful order creation
+            cart.items.all().delete()
+            
+            return Response(
+                OrderSerializer(order, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+            
+        except Cart.DoesNotExist:
+            return Response(
+                {'error': 'Cart not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class OrderItemViewSet(viewsets.ModelViewSet):
     serializer_class = OrderItemSerializer
@@ -172,6 +234,9 @@ class PaymentViewSet(viewsets.ModelViewSet):
 # -------------------
 # CART
 # -------------------
+from django.db import IntegrityError
+from django.shortcuts import get_object_or_404
+
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -181,45 +246,80 @@ class CartViewSet(viewsets.ModelViewSet):
         return Cart.objects.filter(user=self.request.user)
 
     def list(self, request):
-        """Get or create user's cart"""
-        cart, created = Cart.objects.get_or_create(user=request.user)
+        """Get user's cart, create if doesn't exist"""
+        try:
+            # Try to get existing cart
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            # Create new cart if it doesn't exist
+            try:
+                cart = Cart.objects.create(user=request.user)
+            except IntegrityError:
+                # Handle race condition - cart was created by another request
+                cart = Cart.objects.get(user=request.user)
+        
         serializer = self.get_serializer(cart)
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
     def add_item(self, request):
-        """Add item to cart"""
-        cart, created = Cart.objects.get_or_create(user=request.user)
+        """Add item to cart with proper error handling"""
+        # Get or create cart with proper error handling
+        try:
+            cart = Cart.objects.get(user=request.user)
+        except Cart.DoesNotExist:
+            try:
+                cart = Cart.objects.create(user=request.user)
+            except IntegrityError:
+                # Cart was created by another request between check and create
+                cart = Cart.objects.get(user=request.user)
+        
         serializer = CartItemCreateSerializer(data=request.data)
         
         if serializer.is_valid():
             variant_id = serializer.validated_data['variant_id']
             quantity = serializer.validated_data['quantity']
             
-            # Check if item already exists in cart
-            cart_item, created = CartItem.objects.get_or_create(
-                cart=cart,
-                variant_id=variant_id,
-                defaults={'quantity': quantity}
-            )
-            
-            if not created:
-                cart_item.quantity += quantity
-                cart_item.save()
-            
-            return Response({'message': 'Item added to cart'}, status=status.HTTP_201_CREATED)
+            try:
+                # Check if variant exists and is in stock
+                variant = ProductVariant.objects.get(id=variant_id)
+                if variant.inventory_quantity <= 0:
+                    return Response(
+                        {'error': 'Product variant is out of stock'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Check if item already exists in cart
+                cart_item, created = CartItem.objects.get_or_create(
+                    cart=cart,
+                    variant=variant,
+                    defaults={'quantity': quantity}
+                )
+                
+                if not created:
+                    cart_item.quantity += quantity
+                    cart_item.save()
+                
+                return Response(
+                    {'message': 'Item added to cart', 'cart_item_id': str(cart_item.id)},
+                    status=status.HTTP_201_CREATED
+                )
+                
+            except ProductVariant.DoesNotExist:
+                return Response(
+                    {'error': 'Product variant does not exist'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'])
     def clear(self, request):
         """Clear user's cart"""
-        try:
-            cart = Cart.objects.get(user=request.user)
-            cart.items.all().delete()
-            return Response({'message': 'Cart cleared'})
-        except Cart.DoesNotExist:
-            return Response({'message': 'Cart is already empty'})
+        cart = get_object_or_404(Cart, user=request.user)
+        cart.items.all().delete()
+        return Response({'message': 'Cart cleared'})
+
 
 class CartItemViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
