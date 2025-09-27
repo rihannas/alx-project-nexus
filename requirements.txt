@@ -1,0 +1,24 @@
+Django>=4.2
+djangorestframework
+psycopg2-binary
+djangorestframework-simplejwt
+drf-yasg==1.21.7
+redis
+django-redis
+celery
+gunicorn
+drf-nested-routers
+pillow
+dj-rest-auth
+django-allauth
+requests
+django-filter
+django-cors-headers
+python-decouple
+whitenoise
+dj-database-url
+django-cloudinary-storage
+cloudinary
+setuptools>=67.8.0  # Explicitly add setuptools
+packaging  # drf-yasg dependency
+coreapi  # drf-yasg dependency
