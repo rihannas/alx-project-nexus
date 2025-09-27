@@ -13,3 +13,6 @@ dj-rest-auth
 django-allauth
 requests
 django-filter
+django-cors-headers
+python-decouple
+whitenoise
