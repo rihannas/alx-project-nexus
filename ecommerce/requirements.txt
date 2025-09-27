@@ -16,3 +16,6 @@ django-filter
 django-cors-headers
 python-decouple
 whitenoise
+dj-database-url
+django-cloudinary-storage
+cloudinary
