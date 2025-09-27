@@ -1,4 +1,5 @@
 from django.db import models
+from decimal import Decimal
 from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -287,17 +288,18 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 order_items.append({
                     'variant': variant,
                     'quantity': quantity,
-                    'price': variant.price  # Ensure price is set
+                    'price': variant.price
                 })
                 
             except ProductVariant.DoesNotExist:
                 raise serializers.ValidationError(f"Product variant {item_data['variant_id']} does not exist")
         
-        # Create order
+        # Create order - explicitly pass only the fields you need
         order = Order.objects.create(
             user=user,
             total_amount=total_amount,
-            **validated_data
+            shipping_address=validated_data['shipping_address'],
+            phone=validated_data['phone']
         )
         
         # Create order items and update inventory
