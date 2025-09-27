@@ -242,6 +242,14 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ["id", "variant", "product_name", "quantity", "price", "total_price"]
 
 class OrderCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating orders.
+    
+    Required fields:
+    - shipping_address: string
+    - phone: string
+    - items: array of order items with variant_id and quantity
+    """
     items = OrderItemCreateSerializer(many=True, write_only=True)
     
     class Meta:

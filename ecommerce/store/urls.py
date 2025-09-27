@@ -32,3 +32,5 @@ urlpatterns = [
     path('', include(products_router.urls)),
     path('', include(orders_router.urls)),
 ]
+
+

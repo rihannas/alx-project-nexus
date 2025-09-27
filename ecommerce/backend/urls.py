@@ -22,8 +22,34 @@ from rest_framework_simplejwt.views import (
     TokenVerifyView,
 )
 
+# Swagger imports
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+# Swagger schema configuration
+schema_view = get_schema_view(
+    openapi.Info(
+        title="E-Commerce API",
+        default_version='v1',
+        description="E-Commerce API Documentation",
+        terms_of_service="https://www.google.com/policies/terms/",
+        contact=openapi.Contact(email="admin@ecommerce.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # API Documentation
+    path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    
     
     # Store app
     path('api/store/', include('store.urls')),
@@ -37,3 +63,5 @@ urlpatterns = [
     path('api/auth/jwt/refresh/', TokenRefreshView.as_view(), name='jwt-refresh'),
     path('api/auth/jwt/verify/', TokenVerifyView.as_view(), name='jwt-verify'),
 ]
+
+
