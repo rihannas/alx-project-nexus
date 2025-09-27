@@ -19,3 +19,6 @@ whitenoise
 dj-database-url
 django-cloudinary-storage
 cloudinary
+setuptools>=67.8.0  # Explicitly add setuptools
+packaging  # drf-yasg dependency
+coreapi  # drf-yasg dependency
