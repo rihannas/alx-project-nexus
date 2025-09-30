@@ -91,7 +91,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 max_price=models.Max('variants__price')
             ).order_by('-max_price')
             
-        return queryset
+        return queryset.distinct()
     
     @action(detail=True, methods=['get'])
     def variants(self, request, slug=None):
